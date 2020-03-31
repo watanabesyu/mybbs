@@ -55,7 +55,7 @@
             window.alert('書き込みすぎ');
             return false; // 送信を中止
         }else{
-            if(window.confirm('本当に大丈夫ですか？？')){ // 確認ダイアログを表示
+            if(window.confirm('本当によろしいですか？？')){ // 確認ダイアログを表示
                 return true; // 「OK」時は送信を実行
             }else{ // 「キャンセル」時の処理
                 window.alert('キャンセルされました'); // 警告ダイアログを表示
