@@ -1,4 +1,7 @@
 <?php
+//ソートの挙動がおかしい
+//最大表示数まわりも要改修
+//ページングと最大表示数とソート同時に使われた時の挙動を考える
   try {
     //db接続
     require('mybbs_db.php');
@@ -39,52 +42,48 @@
       //最大ページ数を取得する
       $maxPage = ceil($page_num / $max_view);
     
-      //sb(table_sort)機能処理
-    }elseif(isset($_POST['sb'])){
+      //ts(table_sort)機能処理
+    }else {
+      //elseif(isset($_POST['ts'])){}
       //変数名:例nsu(name(カラム名) sort up(asc OR desc))
+      if(isset($_POST['ts'])){
+        $table_sort = $_POST['ts'];
+      }else{
+        $table_sort = '';
+      }
       $sort_option = '';
-      switch($_POST['sb']){
+      switch($table_sort){
         case 'nsu':
-          $sort_option = 'name COLLATE utf8_general_ci ASC';
+          $sort_option = 'name';
           break;
         case 'nsd':
-          $sort_option = 'name COLLATE utf8_general_ci DESC';
+          $sort_option = 'name DESC';
           break;
         case 'tsu':
-          $sort_option = 'title COLLATE utf8_general_ci ASC';
+          $sort_option = 'title';
           break;
         case 'tsd':
-          $sort_option = 'title COLLATE utf8_general_ci DESC';
+          $sort_option = 'title DESC';
           break;
         case 'dsu':
-          $sort_option = 'date ASC';
+          $sort_option = 'date';
           break;
         default:
           $sort_option = 'date DESC';
           break;
       }
-      $stmt = $pdo->query("SELECT * FROM board_table ORDER BY {$sort_option} LIMIT {$start},{$max_view};");
+      $stmt = $pdo->query("SELECT * FROM board_table ORDER BY {$sort_option} LIMIT {$start},{$max_view}");
       $stmt = $stmt->fetchALL(PDO::FETCH_ASSOC);
       //テーブルのデータ件数を取得する
-      $page_num = $pdo->query("SELECT COUNT(*) FROM board_table;");
+      $page_num = $pdo->query("SELECT COUNT(*) FROM board_table");
       $page_num = $page_num->fetchColumn();
       //最大ページ数を取得する
-      $maxPage = ceil($page_num / $max_view);  
-    
-    //検索フォーム、ソート機能が使われなかった場合
-    }else{
-      $stmt = $pdo->query("SELECT * FROM board_table ORDER BY date DESC LIMIT {$start},{$max_view};");
-      $stmt = $stmt->fetchAll(PDO::FETCH_ASSOC);
-      //テーブルのデータ件数を取得する
-      $page_num = $pdo->query("SELECT COUNT(*) FROM board_table;");
-      $page_num = $page_num->fetchColumn();
-      //最大ページ数を取得する
-      $maxPage = ceil($page_num / $max_view);
-    }  
+      $maxPage = ceil($page_num / $max_view); 
+    } 
   }catch (Exception $e) {
     echo 'エラーが発生しました。:' . $e->getMessage();
   }
-  
+
 ?>
 <!DOCTYPE html>
 <html lang="ja">
@@ -116,6 +115,20 @@
           return true; // 送信を実行
         }  
       }
+      function checkView(){
+        var flag = 0;
+        // 入力check
+        if(document.view.mv.value == '選択...'){ // 入力をチェック
+          flag = 1;
+        }
+        // 設定終了
+        if(flag){
+          window.alert('表示件数を選択してください'); // 入力漏れがあれば警告ダイアログを表示
+          return false; // 送信を中止
+        }else{
+          return true; // 送信を実行
+        }  
+      }  
     </script>
 </head>
 <body>  
@@ -144,7 +157,8 @@
       </div>
     </div>
     </form>
-    <form method="post" class="form-inline">
+    <!-- 最大表示数 -->
+    <form method="post" class="form-inline" name="view" onSubmit="return checkView()">
       <label class="my-1 mr-2" for="inlineFormCustomSelect">表示件数:</label>
       <select class="custom-select my-1 mr-sm-2" id="inlineFormCustomSelect" name="mv">
         <option selected>選択...</option>
@@ -152,7 +166,7 @@
           <option value=<?= $i ?>><?= $i ?></option>
         <?php endfor ?>
       </select>
-      <button class="btn btn-outline-secondary btn-md" type="submit" name="select" value="view_num">表示件数を更新</button>
+      <button class="btn btn-outline-secondary btn-md" type="submit" name="select" value="view_num">更新</button>
     </form>
     <!--tableを表示-->
     <div class="table-responsive overflow-y:scroll">
@@ -162,16 +176,16 @@
          <form method="post">
           <tr class ="text-center">
             <th><i class="fas fa-signature"></i>名前 
-              <button class="btn btn-outline-secondary btn-sm" type="submit" name="sb" value="nsu">↑</button>
-              <button class="btn btn-outline-secondary btn-sm" type="submit" name="sb" value="nsd">↓</button>
+              <button class="btn btn-outline-secondary btn-sm" type="submit" name="ts" value="nsu">↑</button>
+              <button class="btn btn-outline-secondary btn-sm" type="submit" name="ts" value="nsd">↓</button>
             </th>
             <th><i class="fas fa-file-signature"></i>タイトル 
-              <button class="btn btn-outline-secondary btn-sm" type="submit" name="sb" value="tsu">↑</button>
-              <button class="btn btn-outline-secondary btn-sm" type="submit" name="sb" value="tsd">↓</button>
+              <button class="btn btn-outline-secondary btn-sm" type="submit" name="ts" value="tsu">↑</button>
+              <button class="btn btn-outline-secondary btn-sm" type="submit" name="ts" value="tsd">↓</button>
             </th>
             <th><i class="far fa-clock"></i>投稿日付 
-              <button class="btn btn-outline-secondary btn-sm" type="submit" name="sb" value="dsu">↑</button>
-              <button class="btn btn-outline-secondary btn-sm" type="submit" name="sb" value="dsd">↓</button>
+              <button class="btn btn-outline-secondary btn-sm" type="submit" name="ts" value="dsu">↑</button>
+              <button class="btn btn-outline-secondary btn-sm" type="submit" name="ts" value="dsd">↓</button>
             </th>
             <th><i class="far fa-edit"></i> 
             </th>
@@ -182,10 +196,10 @@
         <!--foreachでboard_tableを表示-->
           <?php foreach ($stmt as $table): ?>
           <tr>
-            <td><?= h($table['name']) ?></td>
-            <td><a href="show.php?id=<?= $table['id'] ?>"><?= h($table['title']) ?></a></td>
-            <td><?= $table["date"] ?></td>
-            <td>
+            <td class ="text-left"><?= h($table['name']) ?></td>
+            <td class ="text-center"><a href="show.php?id=<?= $table['id'] ?>"><?= h($table['title']) ?></a></td>
+            <td class ="text-right"><?= $table["date"] ?></td>
+            <td class ="text-center">
               <a class="btn btn-outline-success" href="edit.php?id=<?= $table['id'] ?>">編集</a>
             </td>
           </tr>
